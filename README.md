@@ -1,101 +1,32 @@
-# Schema
+# Schema: the story behind your photos
 
-**The story behind your photos.**
+Schema is a private scrapbook for keeping photos and personal notes together in a life archive. This edition adapts the existing Schema project for Hacktoberfest Hack Day Delhi and adds a Gemma 4 memory assistant.
 
-A photo keeps the scene. Schema keeps the people, places and small details that made it matter. It is a private scrapbook for young adults who want their memories to feel like their own pages, with photos, personal notes and an archive they can revisit.
+## How Gemma helps
 
-This hackathon edition adapts the existing Schema project and adds a Gemma 4 memory assistant.
+Users can ask about their memories or reflect on permitted pages. After account-level consent and permission for each page, Schema selects relevant journal text and sends it with the question to `gemma-4-26b-a4b-it` through the Gemini API. Answers cite the selected pages. If no permitted memory matches, Schema says so instead of inventing an answer. Photos and recordings are not sent to the model. Google may use free-tier content to improve its products.
 
-![An illustrative Schema scrapbook page](docs/assets/memory-page.png)
+The hosted assistant is currently limited to approved demo accounts. Retrieval uses keyword matching, not semantic search. A real Gemma response was tested using a synthetic journal entry; the complete hosted account-to-answer flow has not yet been verified.
 
-## What it does
+## Project
 
-- Create a journal page with photos and your own words.
-- Keep pages together in a chronological life archive.
-- Add public event context through TinyFish, then choose each fact before it enters a draft.
-- Keep the source link and retrieval time alongside the selected context.
-- Control which saved pages the optional memory assistant can use.
+- Live prototype: https://schema-gemma-hackathon.vercel.app
+- Source: https://github.com/biney25/schema-gemma-hackathon
+- Stack: Next.js, React, TypeScript, Supabase Auth, Postgres, private storage, Vercel, and Gemma 4 via the Gemini API.
+- Project history: Schema existed before this event and was previously developed for Kritical Hacks. This edition uses a separate source copy and deployment.
 
-The scrapbook above is an illustrative page. Public event information stays distinct from the user's personal account of the day.
+## Setup and validation
 
-## Why TinyFish belongs here
-
-An event's name, venue and program can sit across interactive tabs and schedules. TinyFish's Web Agent browses the public page and returns structured candidates. Schema turns those candidates into a draft only after the user reviews them.
-
-1. The user supplies a public HTTPS event link and agrees to research it.
-2. The server authenticates the account, validates the URL and reserves its research allowance.
-3. TinyFish starts an asynchronous browser job with a fixed extraction goal and a **120-second provider time limit**.
-4. Schema polls the run using a signed token tied to its owner.
-5. The user selects facts. The draft builder includes only those selections, their source and retrieval time.
-
-Private journal text and photos never enter the TinyFish request. The provider key stays on the server. Failed research leaves the journal unchanged.
-
-The current deployment uses TinyFish's generally available time limit. Custom step limits require beta access and are not sent by this version. Six-step and twelve-step economics scenarios are cost-model assumptions, not guaranteed limits on a live run.
-
-Implementation: [provider calls](lib/tinyfish/provider.mjs), [HTTP route](app/api/tinyfish/route.ts), [review interface](app/tinyfish-context.tsx) and [draft builder](lib/tinyfish/context.mjs).
-
-A live TinyFish provider run extracted PyCon US 2026's dates, venue and program sections in five steps. Its [recorded result](evidence/tinyfish-live-provider.json) identifies the source and capture method.
-
-## Run the TinyFish workflow
-
-Use Node 24 and pnpm 11.25. This command runs research and reviewed-draft creation without setting up the web app's account database.
+See [web app setup](docs/KRITICAL_SETUP.md), [Gemma setup and privacy](docs/FREE_AI.md), and `.env.example`. Use a separate Supabase project, apply the migrations and deploy the upload and worker functions before running the customer app.
 
 ```bash
 pnpm install --frozen-lockfile
-pnpm demo:tinyfish --url https://us.pycon.org/2026/ --fields title,venue
-```
-
-Set `TINYFISH_API_KEY` in your shell or secret manager before a live run. The command prints the returned facts, saves a source-labelled draft under `.demo/memories/`, then reopens it from disk. `--fields` specifies the facts you approve. Run without `--fields` to choose interactively.
-
-To inspect the draft workflow using the recorded provider result, with no API call or credit use:
-
-```bash
-pnpm demo:tinyfish --example --fields title,venue
-```
-
-Recorded mode is labelled in both the terminal and saved file.
-
-## Run the web app
-
-Copy `.env.example` to `.env.local` and configure Supabase Auth, Postgres and private storage using the [setup guide](docs/KRITICAL_SETUP.md). Enable TinyFish with its server key and approved demo-account emails.
-
-```bash
-pnpm customer:dev
-```
-
-Open `http://localhost:3000`, sign in, and open **My life** to add event context. A hosted deployment uses the same server variables and `pnpm customer:build`.
-
-## Technical approach
-
-| Layer | Implementation |
-|---|---|
-| Interface | Next.js, React and TypeScript |
-| Accounts and records | Supabase Auth and Postgres with row-level security |
-| Media | Private object storage |
-| Web research | TinyFish asynchronous Web Agent |
-| Draft creation | Per-field approval with source provenance |
-| Optional memory answers | Consent-based retrieval of permitted journal text with source references |
-
-The current memory retrieval adapter ranks keyword matches. Semantic memory connections and native mobile apps are future work.
-
-The standalone app's optional assistant uses **Gemma 4 through the Gemini API free tier**, with approved accounts, account consent and individual page permissions. It has no automatic paid-provider fallback. See [free AI setup, privacy and limits](docs/FREE_AI.md). The new Gemma integration requires a Gemini API key and independent end-to-end verification. Google may use free-tier prompts to improve products.
-
-## Price economics
-
-The proposed model offers a limited free plan and **Plus at ₹149/month**, with explicit storage, AI and research allowances. Typical modeled variable cost is about **₹27 per paid user per month**. After illustrative tax and payment-fee assumptions, about **₹96** remains before free-user subsidy and shared fixed costs.
-
-The [workbook](submission/Schema_Kritical_Economics.xlsx) contains formulas, usage assumptions, competitor prices, source links and a full-allowance stress case. These are proposed prices and modeled costs. Billing is disabled in the prototype.
-
-## Checks
-
-```bash
 pnpm test
 pnpm check
 pnpm customer:build
+pnpm customer:dev
 ```
 
-Tests cover research limits, signed run ownership, selected-fact drafts, journal persistence and account isolation. Run the checks locally as described above.
+The local suite passed 95 tests, the production build passed, and the new Supabase project was configured separately. Signed-in hosted media upload and the full hosted AI flow still need end-to-end verification. Billing is disabled.
 
-## Development
-
-Built for the AI/ML Student Track at Kritical Hacks 2026. This repository extends Schema's existing codebase with bounded TinyFish event research, reviewed draft creation and the competition submission. Earlier development remains in the imported commit history. See [source provenance](docs/PROVENANCE.md).
+This repository also contains an optional TinyFish event research implementation from the earlier edition. It is not configured for the current hosted demo.
