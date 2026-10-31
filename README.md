@@ -30,3 +30,7 @@ pnpm customer:dev
 The local suite passed 95 tests, the production build passed, and the new Supabase project was configured separately. Signed-in hosted media upload and the full hosted AI flow still need end-to-end verification. Billing is disabled.
 
 This repository also contains an optional TinyFish event research implementation from the earlier edition. It is not configured for the current hosted demo.
+
+## License
+
+Schema's project code is available under the [MIT License](LICENSE). Bundled third-party components retain their own licenses, including those in `vendor/` and `build/`.
